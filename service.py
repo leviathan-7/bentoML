@@ -18,7 +18,9 @@ class YoloV8:
         image_bytes = base64.b64decode(image_base64)
         image = Image.open(io.BytesIO(image_bytes))
         result = self.model.predict(image)[0]
-        result.save("file.jpg")
-        with open("file.jpg", "rb") as f:
+        save_file = "file.jpg"
+        result.save(save_file)
+        with open(save_file, "rb") as f:
             output_base64 = base64.b64encode(f.read())
+        os.remove(save_file)
         return output_base64.decode('utf-8')
