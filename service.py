@@ -1,15 +1,10 @@
 from __future__ import annotations
 
-import json
+import io
 import os
-import typing as t
-from pathlib import Path
 import bentoml
-from bentoml.validators import ContentType
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
-
-Image = t.Annotated[Path, ContentType("image/*")]
+import base64
+from PIL import Image
 
 @bentoml.service(resources={"gpu": 1})
 class YoloV8:
@@ -19,8 +14,11 @@ class YoloV8:
         self.model = YOLO(yolo_model)
 
     @bentoml.api
-    def render(self, image: Image) -> Image:
+    def render(self, image_base64: str) -> str:
+        image_bytes = base64.b64decode(image_base64)
+        image = Image.open(io.BytesIO(image_bytes))
         result = self.model.predict(image)[0]
-        output = image.parent.joinpath(f"{image.stem}_result{image.suffix}")
-        result.save(str(output))
-        return output
+        result.save("file.jpg")
+        with open("file.jpg", "rb") as f:
+            output_base64 = base64.b64encode(f.read())
+        return output_base64.decode('utf-8')
